@@ -16,7 +16,7 @@ func main() {
 	config.Connect()
 	routes.RegisterBookStorRoutes(router)
 
-	// ✅ Enable CORS
+	// Enable CORS
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:5173"}, 
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
