@@ -30,12 +30,12 @@ func Connect() {
 
 	// Use your database name here (replace `bookstore`)
 	DB = client.Database("bookstore")
-	fmt.Println("✅ Connected to MongoDB!")
+	fmt.Println("Connected to MongoDB!")
 }
 
 func GetCollection(collectionName string) *mongo.Collection {
 	if DB == nil {
-		log.Fatal("❌ DB is nil, make sure Connect() was called.")
+		log.Fatal("DB is nil, make sure Connect() was called.")
 	}
 	return DB.Collection(collectionName)
 }
