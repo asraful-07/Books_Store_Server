@@ -7,11 +7,24 @@ import (
 )
 
 type Book struct {
-	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Name        string             `json:"name,omitempty" bson:"name,omitempty"`
-	Author      string             `json:"author,omitempty" bson:"author,omitempty"`
-	Publication string             `json:"publication,omitempty" bson:"publication,omitempty"`
+	ID           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	Name         string             `json:"name,omitempty" bson:"name,omitempty"`
+	Author       string             `json:"author,omitempty" bson:"author,omitempty"`
+	Publication  string             `json:"publication,omitempty" bson:"publication,omitempty"`
+	ProductType  string             `json:"productType,omitempty" bson:"productType,omitempty"`
+	PublishDate  string             `json:"publishDate,omitempty" bson:"publishDate,omitempty"`
+	Color        []string           `json:"color,omitempty" bson:"color,omitempty"` 
+	Size         string             `json:"size,omitempty" bson:"size,omitempty"`  
+	Material     []string           `json:"material,omitempty" bson:"material,omitempty"`
+	Quantity     int                `json:"quantity,omitempty" bson:"quantity,omitempty"`
+	Price        float64            `json:"price,omitempty" bson:"price,omitempty"`
+	OldPrice     float64            `json:"oldPrice,omitempty" bson:"oldPrice,omitempty"`
+	Stock        int                `json:"stock,omitempty" bson:"stock,omitempty"` 
+	Description  string             `json:"description,omitempty" bson:"description,omitempty"`
+	ImageURLs    []string           `json:"imageUrls,omitempty" bson:"imageUrls,omitempty"` 
+	Tags         []string           `json:"tags,omitempty" bson:"tags,omitempty"` 
 }
+
 
 
 func init() {
