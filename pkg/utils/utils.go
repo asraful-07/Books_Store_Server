@@ -12,5 +12,4 @@ func ParseBody(r *http.Request, x interface{}) {
 		return
 	}
 	json.Unmarshal(body, x)
-
 }
