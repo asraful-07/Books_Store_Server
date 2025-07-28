@@ -16,7 +16,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-//
+
 var bookCollection = config.GetCollection("books")
 var userCollection = config.GetCollection("users")
 
