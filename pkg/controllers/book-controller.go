@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var bookCollection = config.GetCollection("books")
@@ -56,6 +57,53 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(books)
 }
+
+func GetRelatedBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	params := mux.Vars(r)
+	bookID, err := primitive.ObjectIDFromHex(params["id"])
+	if err != nil {
+		http.Error(w, "Invalid book ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Step 1: Find the current book by ID
+	var currentBook models.Book
+	err = bookCollection.FindOne(ctx, bson.M{"_id": bookID}).Decode(&currentBook)
+	if err != nil {
+		http.Error(w, "Book not found", http.StatusNotFound)
+		return
+	}
+
+	// Step 2: Define filter to find related books by productType
+	filter := bson.M{
+		"productType": currentBook.ProductType,
+		"_id":         bson.M{"$ne": bookID}, 
+	}
+
+	// Step 3: Limit results to 4 using options
+	findOptions := options.Find().SetLimit(12)
+
+	cursor, err := bookCollection.Find(ctx, filter, findOptions)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var relatedBooks []models.Book
+	for cursor.Next(ctx) {
+		var book models.Book
+		cursor.Decode(&book)
+		relatedBooks = append(relatedBooks, book)
+	}
+
+	json.NewEncoder(w).Encode(relatedBooks)
+}
+
 
 func GetBookById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
