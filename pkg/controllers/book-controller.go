@@ -12,10 +12,72 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+//
 var bookCollection = config.GetCollection("books")
+var userCollection = config.GetCollection("users")
+
+func RegisterUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var user models.User
+	utils.ParseBody(r, &user)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// Check if email already exists
+	count, _ := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
+	if count > 0 {
+		http.Error(w, "Email already exists", http.StatusBadRequest)
+		return
+	}
+
+	// Default role = "user" if not provided
+	if user.Role == "" {
+		user.Role = "user"
+	}
+
+	_, err := userCollection.InsertOne(ctx, user)
+	if err != nil {
+		http.Error(w, "Failed to register", http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{
+		"message": "Registration successful",
+	})
+}
+
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var loginData models.User
+	utils.ParseBody(r, &loginData)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	var user models.User
+	err := userCollection.FindOne(ctx, bson.M{
+		"email":    loginData.Email,
+		"password": loginData.Password,
+	}).Decode(&user)
+
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		} else {
+			http.Error(w, "Server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Success – return user info (except password)
+	user.Password = ""
+	json.NewEncoder(w).Encode(user)
+}
 
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
