@@ -20,6 +20,7 @@ import (
 var bookCollection = config.GetCollection("books")
 var userCollection = config.GetCollection("users")
 
+
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var user models.User
@@ -165,7 +166,6 @@ func GetRelatedBooks(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode(relatedBooks)
 }
-
 
 func GetBookById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
