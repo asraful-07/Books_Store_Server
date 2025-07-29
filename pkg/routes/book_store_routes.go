@@ -15,4 +15,5 @@ func RegisterBookStorRoutes(router *mux.Router) {
 	router.HandleFunc("/book/{bookID}", controllers.DeleteBook).Methods("DELETE")
 	router.HandleFunc("/register", controllers.RegisterUser).Methods("POST")
 	router.HandleFunc("/login", controllers.LoginUser).Methods("POST")
+	router.HandleFunc("/book-info", controllers.GetByBook).Methods("GET")
 }

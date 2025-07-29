@@ -229,3 +229,25 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode("Book deleted")
 }
+
+func GetByBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var books []models.Book
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := bookCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var book models.Book
+		cursor.Decode(&book)
+		books = append(books, book)
+	}
+	json.NewEncoder(w).Encode(books)
+}
