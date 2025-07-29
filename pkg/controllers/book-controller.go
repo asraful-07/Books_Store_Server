@@ -234,10 +234,17 @@ func GetByBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var books []models.Book
 
+	category := r.URL.Query().Get("category")
+
+	filter := bson.M{}
+	if category != "" && category != "All" {
+		filter = bson.M{"productType": category}
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	cursor, err := bookCollection.Find(ctx, bson.M{})
+	cursor, err := bookCollection.Find(ctx, filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -246,8 +253,18 @@ func GetByBook(w http.ResponseWriter, r *http.Request) {
 
 	for cursor.Next(ctx) {
 		var book models.Book
-		cursor.Decode(&book)
+		if err := cursor.Decode(&book); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		books = append(books, book)
 	}
+
+	if err := cursor.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	json.NewEncoder(w).Encode(books)
 }
+
