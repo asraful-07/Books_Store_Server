@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -98,7 +99,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(book)
 }
 
-func GetBook(w http.ResponseWriter, r *http.Request) {
+func GetBooks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var books []models.Book
 
@@ -112,6 +113,76 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 	}
 	defer cursor.Close(ctx)
 
+	for cursor.Next(ctx) {
+		var book models.Book
+		cursor.Decode(&book)
+		books = append(books, book)
+	}
+
+	json.NewEncoder(w).Encode(books)
+}
+
+func GetBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Query params
+	category := r.URL.Query().Get("category")
+	search := r.URL.Query().Get("search")
+	sortBy := r.URL.Query().Get("sort") 
+	bookType := r.URL.Query().Get("type") 
+	pageStr := r.URL.Query().Get("page")
+	limitStr := r.URL.Query().Get("limit")
+
+	filter := bson.M{}
+
+	if category != "" {
+		filter["productType"] = category
+	}
+	if search != "" {
+		filter["name"] = bson.M{"$regex": search, "$options": "i"}
+	}
+	if bookType != "" {
+		if bookType == "new" {
+			filter["publishDate"] = bson.M{"$gte": "2023"} 
+		} else {
+			filter["publishDate"] = bson.M{"$lt": "2023"}
+		}
+	}
+
+	// Pagination
+	page, _ := strconv.Atoi(pageStr)
+	if page == 0 {
+		page = 1
+	}
+	limit, _ := strconv.Atoi(limitStr)
+	if limit == 0 {
+		limit = 9
+	}
+	skip := (page - 1) * limit
+
+	findOptions := options.Find()
+	findOptions.SetSkip(int64(skip))
+	findOptions.SetLimit(int64(limit))
+
+	// Sorting
+	switch sortBy {
+case "low":
+		findOptions.SetSort(bson.D{{Key: "price", Value: 1}})
+	case "high":
+		findOptions.SetSort(bson.D{{Key: "price", Value: -1}})
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := bookCollection.Find(ctx, filter, findOptions)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var books []models.Book
 	for cursor.Next(ctx) {
 		var book models.Book
 		cursor.Decode(&book)
@@ -268,3 +339,24 @@ func GetByBook(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
+func GetByBookData(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var books []models.Book
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := bookCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var book models.Book
+		cursor.Decode(&book)
+		books = append(books, book)
+	}
+	json.NewEncoder(w).Encode(books)
+}
