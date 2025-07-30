@@ -517,7 +517,7 @@ func GetFavorites(w http.ResponseWriter, r *http.Request) {
 func GetFavByEmail(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	// email from query param: /book-cart?email=someone@gmail.com
+	// email from query param: /book-favorites?email=someone@gmail.com
 	email := r.URL.Query().Get("email")
 	if email == "" {
 		http.Error(w, "Email query param is required", http.StatusBadRequest)
