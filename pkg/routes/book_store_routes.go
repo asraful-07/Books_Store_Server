@@ -26,5 +26,4 @@ func RegisterBookStorRoutes(router *mux.Router) {
 	router.HandleFunc("/favorites", controllers.GetFavorites).Methods("GET")
 	router.HandleFunc("/book-favorites", controllers.GetFavByEmail).Methods("GET")
 	router.HandleFunc("/favorites", controllers.DeleteFavorite).Methods("DELETE")
-
 }
