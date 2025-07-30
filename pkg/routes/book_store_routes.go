@@ -18,4 +18,8 @@ func RegisterBookStorRoutes(router *mux.Router) {
 	router.HandleFunc("/login", controllers.LoginUser).Methods("POST")
 	router.HandleFunc("/book-info", controllers.GetByBook).Methods("GET")
 	router.HandleFunc("/book-data", controllers.GetByBookData).Methods("GET")
+	router.HandleFunc("/book-cart", controllers.CreateAddCart).Methods("POST")
+	router.HandleFunc("/carts", controllers.GetCartById).Methods("GET")
+	router.HandleFunc("/book-cart", controllers.GetCartByEmail).Methods("GET")
+	router.HandleFunc("/cart/{cartID}", controllers.DeleteCart).Methods("DELETE")
 }

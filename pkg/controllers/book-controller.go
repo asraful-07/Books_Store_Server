@@ -20,6 +20,9 @@ import (
 
 var bookCollection = config.GetCollection("books")
 var userCollection = config.GetCollection("users")
+var cartsCollection = config.GetCollection("carts")
+// var favoritesCollection = config.GetCollection("favorites")
+
 
 
 func RegisterUser(w http.ResponseWriter, r *http.Request) {
@@ -363,4 +366,93 @@ func GetByBookData(w http.ResponseWriter, r *http.Request) {
 		books = append(books, book)
 	}
 	json.NewEncoder(w).Encode(books)
+}
+
+func CreateAddCart(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var cart models.Cart
+	utils.ParseBody(r, &cart)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := cartsCollection.InsertOne(ctx, cart)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	cart.ID = res.InsertedID.(primitive.ObjectID)
+	json.NewEncoder(w).Encode(cart)
+
+}
+
+func GetCartById(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json") 
+	var carts []models.Cart
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := cartsCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var cart models.Cart
+		cursor.Decode(&cart)
+		carts = append(carts, cart)
+	}
+	json.NewEncoder(w).Encode(carts)
+}
+
+func GetCartByEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// email from query param: /book-cart?email=someone@gmail.com
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "Email query param is required", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{"userEmail": email}
+
+	cursor, err := cartsCollection.Find(ctx, filter)
+	if err != nil {
+		http.Error(w, "Error fetching cart: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var userCarts []models.Cart
+	if err := cursor.All(ctx, &userCarts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(userCarts)
+}
+
+func DeleteCart(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json") 
+	id := mux.Vars(r)["cartID"]
+	objId, _ := primitive.ObjectIDFromHex(id)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err := cartsCollection.DeleteOne(ctx, bson.M{"_id" : objId})
+	if err != nil {
+		http.Error(w, "Delete failed", http.StatusBadRequest)
+		return
+	}
+	json.NewEncoder(w).Encode("Book deleted")
 }
