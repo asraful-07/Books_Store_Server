@@ -34,7 +34,16 @@ type Book struct {
 	Tags         []string           `json:"tags,omitempty" bson:"tags,omitempty"` 
 }
 
-
+type Cart struct {
+	ID          primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"` 
+	Name        string             `json:"name,omitempty" bson:"name,omitempty"` 
+	Author      string             `json:"author,omitempty" bson:"author,omitempty"` 
+	Price       float64            `json:"price,omitempty" bson:"price,omitempty"` 
+	ProductType string             `json:"productType,omitempty" bson:"productType,omitempty"`
+	Quantity    int                `json:"quantity,omitempty" bson:"quantity,omitempty"` 
+	ImageUrls   []string           `json:"imageUrls,omitempty" bson:"imageUrls,omitempty"` 
+	UserEmail   string             `json:"userEmail,omitempty" bson:"userEmail,omitempty"` 
+}
 
 func init() {
 	config.Connect()

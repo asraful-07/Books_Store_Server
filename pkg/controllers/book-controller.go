@@ -81,47 +81,6 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(user)
 }
 
-func CreateBook(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var book models.Book
-	utils.ParseBody(r, &book)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	res, err := bookCollection.InsertOne(ctx, book)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	book.ID = res.InsertedID.(primitive.ObjectID)
-	json.NewEncoder(w).Encode(book)
-}
-
-func GetBooks(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var books []models.Book
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := bookCollection.Find(ctx, bson.M{})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	defer cursor.Close(ctx)
-
-	for cursor.Next(ctx) {
-		var book models.Book
-		cursor.Decode(&book)
-		books = append(books, book)
-	}
-
-	json.NewEncoder(w).Encode(books)
-}
-
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -166,7 +125,7 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 
 	// Sorting
 	switch sortBy {
-case "low":
+    case "low":
 		findOptions.SetSort(bson.D{{Key: "price", Value: 1}})
 	case "high":
 		findOptions.SetSort(bson.D{{Key: "price", Value: -1}})
@@ -238,6 +197,49 @@ func GetRelatedBooks(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(relatedBooks)
 }
 
+// This is Real CRUD Operation ***************
+
+func CreateBook(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var book models.Book
+	utils.ParseBody(r, &book)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := bookCollection.InsertOne(ctx, book)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	book.ID = res.InsertedID.(primitive.ObjectID)
+	json.NewEncoder(w).Encode(book)
+}
+
+func GetBooks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var books []models.Book
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := bookCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var book models.Book
+		cursor.Decode(&book)
+		books = append(books, book)
+	}
+
+	json.NewEncoder(w).Encode(books)
+}
+
 func GetBookById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	id := mux.Vars(r)["bookID"]
@@ -300,6 +302,8 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 
 	json.NewEncoder(w).Encode("Book deleted")
 }
+
+// This is Real CRUD Operation ***************
 
 func GetByBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
