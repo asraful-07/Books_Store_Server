@@ -21,7 +21,7 @@ import (
 var bookCollection = config.GetCollection("books")
 var userCollection = config.GetCollection("users")
 var cartsCollection = config.GetCollection("carts")
-// var favoritesCollection = config.GetCollection("favorites")
+var favoritesCollection = config.GetCollection("favorites")
 
 
 
@@ -368,6 +368,8 @@ func GetByBookData(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(books)
 }
 
+// Cart to Book
+
 func CreateAddCart(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -455,4 +457,122 @@ func DeleteCart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode("Book deleted")
+}
+
+//  Favorites to Book 
+
+func CreateFavorites(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json") 
+
+	var favorite models.Cart
+	utils.ParseBody(r, &favorite)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{
+		"name":      favorite.Name,
+		"userEmail": favorite.UserEmail,
+	}
+	var existing models.Cart
+	err := favoritesCollection.FindOne(ctx, filter).Decode(&existing)
+	if err == nil {
+	
+		http.Error(w, "Book already in wishlist", http.StatusConflict)
+		return
+	}
+
+	res, err := favoritesCollection.InsertOne(ctx, favorite)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	favorite.ID = res.InsertedID.(primitive.ObjectID)
+	json.NewEncoder(w).Encode(favorite)
+}
+
+func GetFavorites(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json") 
+	var favorites []models.Cart
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cursor, err := favoritesCollection.Find(ctx, bson.M{})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var favorite models.Cart
+		cursor.Decode(&favorite)
+		favorites = append(favorites, favorite)
+	}
+	json.NewEncoder(w).Encode(favorites)
+}
+
+func GetFavByEmail(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// email from query param: /book-cart?email=someone@gmail.com
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		http.Error(w, "Email query param is required", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	filter := bson.M{"userEmail": email}
+
+	cursor, err := favoritesCollection.Find(ctx, filter)
+	if err != nil {
+		http.Error(w, "Error fetching cart: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer cursor.Close(ctx)
+
+	var userCarts []models.Cart
+	if err := cursor.All(ctx, &userCarts); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	json.NewEncoder(w).Encode(userCarts)
+}
+
+func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	idParam := r.URL.Query().Get("id")
+	if idParam == "" {
+		http.Error(w, "ID is required", http.StatusBadRequest)
+		return
+	}
+
+	objID, err := primitive.ObjectIDFromHex(idParam)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	res, err := favoritesCollection.DeleteOne(ctx, bson.M{"_id": objID})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if res.DeletedCount == 0 {
+		http.Error(w, "Favorite not found", http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]string{"message": "Deleted successfully"})
 }
