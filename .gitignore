@@ -1,7 +1,7 @@
 
 user: book-store
 pass: 3F_AMJa@RUGjAcx
-
+.env
 
 
 const { MongoClient, ServerApiVersion } = require('mongodb');

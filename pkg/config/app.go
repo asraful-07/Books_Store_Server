@@ -13,7 +13,7 @@ import (
 var DB *mongo.Database
 
 func Connect() {
-	clientOptions := options.Client().ApplyURI("mongodb+srv://book-store:3F_AMJa%40RUGjAcx@cluster0.w0mh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+	clientOptions := options.Client().ApplyURI(`mongodb+srv://DB_USERNAME:DB_PASSWORD@cluster0.w0mh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -29,7 +29,7 @@ func Connect() {
 	}
 
 	// Use your database name here (replace `bookstore`)
-	DB = client.Database("bookstore")
+	DB = client.Database(`DB_NAME`)
 	fmt.Println("Connected to MongoDB!")
 }
 
