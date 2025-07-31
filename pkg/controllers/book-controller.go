@@ -547,32 +547,16 @@ func GetFavByEmail(w http.ResponseWriter, r *http.Request) {
 
 func DeleteFavorite(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
-	idParam := r.URL.Query().Get("id")
-	if idParam == "" {
-		http.Error(w, "ID is required", http.StatusBadRequest)
-		return
-	}
-
-	objID, err := primitive.ObjectIDFromHex(idParam)
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
-		return
-	}
+	id := mux.Vars(r)["favoriteID"]
+	objId, _ := primitive.ObjectIDFromHex(id)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	res, err := favoritesCollection.DeleteOne(ctx, bson.M{"_id": objID})
+	_, err := favoritesCollection.DeleteOne(ctx, bson.M{ "_id" : objId})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	if res.DeletedCount == 0 {
-		http.Error(w, "Favorite not found", http.StatusNotFound)
-		return
-	}
-
-	json.NewEncoder(w).Encode(map[string]string{"message": "Deleted successfully"})
+	json.NewEncoder(w).Encode("Deleted Book")
 }
